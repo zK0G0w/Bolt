@@ -48,6 +48,12 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!-- Actuator: 健康检查与监控 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- HTTP Client: OkHttp -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>

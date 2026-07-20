@@ -41,6 +41,12 @@ build/
 ### Local Maven Config ###
 .mvnrc
 
+### Environment ###
+.env
+
+### Logs ###
+logs/
+
 ### AI Agents ###
 .claude/
 .codex/
