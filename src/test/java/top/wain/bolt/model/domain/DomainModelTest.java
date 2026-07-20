@@ -3,6 +3,8 @@ package top.wain.bolt.model.domain;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @Description: 域模型单元测试，验证 Sealed Interface Pattern Matching 分发、PriceMarkup 加价计算、Record 语义
@@ -28,11 +30,11 @@ class DomainModelTest {
                 case AdSource.RtbSource r -> "RTB 底价:" + r.bidFloor();
                 case AdSource.FixedPriceSource f -> "固定出价:" + f.fixedBidPrice();
             };
-            assert !desc.isEmpty();
+            assertFalse(desc.isEmpty());
             // 公共访问器可统一调用
-            assert source.sourceId() != null;
-            assert source.platformId() != null;
-            assert source.timeoutMs() == 300;
+            assertNotNull(source.sourceId());
+            assertNotNull(source.platformId());
+            assertEquals(300, source.timeoutMs());
         }
     }
 
@@ -88,6 +90,7 @@ class DomainModelTest {
         assertEquals("plat-001", platform.platformId());
         assertEquals("华为ADX", platform.name());
         assertEquals("huawei", platform.platformCode());
+        assertEquals("https://adx.huawei.com/bid", platform.dockingUrl());
         assertEquals(1000, platform.trafficQps());
         assertEquals(50, platform.trafficFrequency());
     }
