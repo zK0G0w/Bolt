@@ -38,6 +38,9 @@ build/
 ### Mac OS ###
 .DS_Store
 
+### Local Maven Config ###
+.mvnrc
+
 ### AI Agents ###
 .claude/
 .codex/

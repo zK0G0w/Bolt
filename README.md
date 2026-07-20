@@ -4,16 +4,16 @@
 
   ## 技术栈
 
-  - JDK 25（Virtual Threads / Structured Concurrency / ScopedValue / Sealed Types）
-  - Helidon SE 4.x（HTTP 服务）
-  - java.net.http.HttpClient（DSP 请求）
+  - JDK 25（Virtual Threads / ScopedValue / Sealed Types / Record）
+  - Spring Boot 3.5 + WebMVC（开启 Virtual Threads）
+  - OkHttp 4.x（DSP 请求 HTTP 客户端）
   - Caffeine 3.x（本地缓存）
-  - Lettuce（Redis 客户端）
+  - Spring Data Redis + Lettuce（Redis 客户端）
 
   ## 核心链路
 
-  请求接入 → 协议解析 → DSP 并发竞价（Structured Concurrency + 超时控制）→ 竞价决策（一价/二价）→ 响应组装 → 追踪埋点
+  请求接入 → 协议解析 → DSP 并发竞价（Virtual Threads + invokeAll 超时控制）→ 竞价决策（一价/二价）→ 响应组装 → 追踪埋点
 
   ## 项目目标
 
-  以真实 RTB 场景为载体，实践 JDK 21+ 的现代并发编程模型，对比传统线程池方案在代码复杂度和资源消耗上的差异。
+  以真实 RTB 场景为载体，实践 JDK 25 的现代语言特性与并发模型，对比传统线程池方案在代码复杂度和资源消耗上的差异。
