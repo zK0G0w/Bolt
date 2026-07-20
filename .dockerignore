@@ -1,0 +1,12 @@
+.git
+.idea
+.mvn
+.claude
+.codex
+target
+*.md
+*.iml
+.gitignore
+.mvnrc
+.env
+docker-compose.yml
