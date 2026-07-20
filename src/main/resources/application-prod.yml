@@ -1,0 +1,29 @@
+# ====================================================
+# Bolt RTB Engine - 生产环境
+# 敏感配置全部通过环境变量注入，禁止硬编码
+# ====================================================
+
+server:
+  tomcat:
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:20000}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:2000}
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      database: ${REDIS_DATABASE:0}
+      timeout: 2000
+      lettuce:
+        pool:
+          max-active: ${REDIS_POOL_MAX_ACTIVE:32}
+          max-idle: 16
+          min-idle: 8
+          max-wait: 1000
+
+management:
+  endpoint:
+    health:
+      show-details: never

@@ -1,0 +1,22 @@
+# ====================================================
+# Bolt RTB Engine - 开发环境
+# ====================================================
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+          min-idle: 2
+          max-wait: 1000
+
+management:
+  endpoint:
+    health:
+      show-details: always

@@ -1,0 +1,43 @@
+# ====================================================
+# Bolt RTB Engine - 公共配置
+# 所有环境共享，环境差异项下沉到各 profile
+# ====================================================
+
+server:
+  port: ${SERVER_PORT:9292}
+  shutdown: graceful
+  tomcat:
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:1000}
+    threads:
+      max: 200
+      min-spare: 20
+    connection-timeout: 3000
+
+spring:
+  application:
+    name: bolt
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # 启用 Virtual Threads 处理请求
+  threads:
+    virtual:
+      enabled: true
+
+  # Jackson 序列化
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # Cache
+  cache:
+    type: caffeine
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
