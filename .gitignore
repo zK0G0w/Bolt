@@ -37,3 +37,11 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### AI Agents ###
+.claude/
+.codex/
+.cursor/
+.aider*
+.augment/
+.gemini/
