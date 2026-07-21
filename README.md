@@ -39,15 +39,8 @@ flowchart LR
 ```bash
 git clone https://github.com/zK0G0w/Bolt.git
 cd Bolt
-docker compose up -d
-```
-
-应用启动后访问 `http://localhost:9292`，发起竞价请求：
-
-```bash
-curl -X POST http://localhost:9292/bid \
-  -H "Content-Type: application/json" \
-  -d @examples/sample-bid-request.json
+make up       # 启动 Redis + App
+make bid      # 发起竞价请求
 ```
 
 ### 本地开发
@@ -55,18 +48,17 @@ curl -X POST http://localhost:9292/bid \
 前置依赖：JDK 25、Redis 7.x
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-
-curl -X POST http://localhost:9292/bid \
-  -H "Content-Type: application/json" \
-  -d @examples/sample-bid-request.json
+make dev      # 启动应用（连接本机 Redis）
+make bid      # 发起竞价请求
 ```
 
-模拟配置热更新：
+### 常用命令
 
 ```bash
-redis-cli -a redis123456 -n 10 PUBLISH bolt:cache:invalidate \
-  '{"entity":"dsp","id":"plat-001","action":"update"}'
+make help     # 查看所有可用命令
+make bench    # 压测（200 并发）
+make test     # 运行测试
+make down     # 停止容器
 ```
 
 ## 性能基准
@@ -85,6 +77,26 @@ redis-cli -a redis123456 -n 10 PUBLISH bolt:cache:invalidate \
 ## 项目目标
 
 以真实 RTB 场景为载体，实践 JDK 25 的现代语言特性与并发模型，对比传统线程池方案在代码复杂度和资源消耗上的差异。
+
+## 接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/bid` | 竞价请求，返回胜出 DSP 的出价响应 |
+| `GET` | `/i` | 展示追踪（impression） |
+| `GET` | `/c` | 点击追踪（click） |
+
+## 配置
+
+主要可调参数（通过环境变量或 `application-dev.yml`）：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `SERVER_PORT` | 9292 | 服务端口 |
+| `REDIS_PASSWORD` | redis123456 | Redis 密码 |
+| `SPRING_PROFILES_ACTIVE` | dev | 运行环境 |
+| `TOMCAT_MAX_CONNECTIONS` | 10000 | 最大连接数 |
+| `TOMCAT_ACCEPT_COUNT` | 1000 | 等待队列长度 |
 
 ## License
 
