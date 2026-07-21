@@ -51,6 +51,8 @@ class BidControllerTest {
                         .content(requestJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("req-001"))
+                .andExpect(jsonPath("$.bidid").isString())
+                .andExpect(jsonPath("$.cur").value("CNY"))
                 .andExpect(jsonPath("$.bids").isArray())
                 .andExpect(jsonPath("$.bids[0].impId").value("imp-001"))
                 .andExpect(jsonPath("$.bids[0].price").isNumber());
