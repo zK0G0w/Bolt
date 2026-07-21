@@ -1,0 +1,53 @@
+{
+  "id": "req-001",
+  "imp": {
+    "id": "imp-001",
+    "format": {
+      "type": "native_feed",
+      "imageCount": 1,
+      "titleLen": 30,
+      "textLen": 50
+    },
+    "dealType": {
+      "type": "rtb",
+      "bidFloor": 200
+    },
+    "bidFloor": 200,
+    "width": 640,
+    "height": 320
+  },
+  "app": {
+    "id": "app-001",
+    "name": "TestApp",
+    "packageName": "com.test",
+    "version": "1.0"
+  },
+  "device": {
+    "id": {
+      "oaid": "oaid-123"
+    },
+    "hardware": {
+      "type": "PHONE",
+      "make": "Xiaomi",
+      "model": "14",
+      "os": "ANDROID",
+      "osVersion": "15",
+      "screenWidth": 1080,
+      "screenHeight": 2400,
+      "connection": "WIFI",
+      "carrier": "CHINA_MOBILE"
+    },
+    "geo": {
+      "lon": 116.4,
+      "lat": 39.9,
+      "ip": "10.0.0.1",
+      "country": "CN",
+      "region": "BJ"
+    }
+  },
+  "user": {
+    "id": "user-001",
+    "interests": ["game"]
+  },
+  "tmax": 500
+}

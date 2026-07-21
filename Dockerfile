@@ -1,25 +1,24 @@
 # ====================================================
 # Stage 1: Build
 # ====================================================
-FROM azul/zulu-openjdk:25 AS builder
+FROM eclipse-temurin:25-jdk AS builder
 
 WORKDIR /build
-COPY pom.xml .
+COPY pom.xml mvnw ./
 COPY .mvn .mvn
 
-# 先下载依赖，利用 Docker 层缓存
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn dependency:go-offline -B
+    ./mvnw dependency:go-offline -B
 
 COPY src src
 
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn package -DskipTests -B
+    ./mvnw package -DskipTests -B
 
 # ====================================================
 # Stage 2: Runtime
 # ====================================================
-FROM azul/zulu-openjdk-alpine:25-jre AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 LABEL maintainer="WainZeng"
 LABEL description="Bolt RTB Ad Bidding Engine"
