@@ -4,16 +4,31 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import top.wain.bolt.MockRedisTestConfig;
+import top.wain.bolt.config.RedisConfig;
+import top.wain.bolt.model.domain.AdSource;
+import top.wain.bolt.model.domain.DspPlatform;
+import top.wain.bolt.repository.AdSourceRepository;
+import top.wain.bolt.repository.DspPlatformRepository;
+
+import java.util.List;
+import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(BidController.class)
-@ComponentScan(basePackages = "top.wain.bolt")
+@ComponentScan(basePackages = "top.wain.bolt",
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = RedisConfig.class))
+@Import({MockRedisTestConfig.class, BidControllerTest.TestRepositoryConfig.class})
 class BidControllerTest {
 
     @Autowired
@@ -21,6 +36,38 @@ class BidControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @TestConfiguration
+    static class TestRepositoryConfig {
+        @Bean
+        public AdSourceRepository adSourceRepository() {
+            List<AdSource> sources = List.of(
+                    new AdSource.RtbSource("src-001", "imp-001", "plat-001", "slot-hw-001", 200, 150L, 15, new AdSource.PriceMarkup.Ratio(20)),
+                    new AdSource.RtbSource("src-002", "imp-001", "plat-002", "slot-gdt-001", 250, 180L, 10, new AdSource.PriceMarkup.Fixed(220L)),
+                    new AdSource.FixedPriceSource("src-003", "imp-001", "plat-003", "slot-bd-001", 300, 500L)
+            );
+            return new AdSourceRepository() {
+                @Override
+                public List<AdSource> findByAdPositionId(String adPositionId) {
+                    return "imp-001".equals(adPositionId) ? sources : List.of();
+                }
+                @Override
+                public Optional<AdSource> findById(String sourceId) {
+                    return sources.stream().filter(s -> s.sourceId().equals(sourceId)).findFirst();
+                }
+            };
+        }
+
+        @Bean
+        public DspPlatformRepository dspPlatformRepository() {
+            var platforms = java.util.Map.of(
+                    "plat-001", new DspPlatform("plat-001", "华为ADX", "huawei", "https://adx.huawei.com/bid", 1000, 50),
+                    "plat-002", new DspPlatform("plat-002", "广点通", "gdt", "https://dsp.gdt.qq.com/bid", 2000, 100),
+                    "plat-003", new DspPlatform("plat-003", "百度联盟", "baidu", "https://dsp.baidu.com/bid", 1500, 80)
+            );
+            return id -> Optional.ofNullable(platforms.get(id));
+        }
+    }
 
     @Test
     void bid_validRequest_withMatchingAdSources_returns200() throws Exception {

@@ -4,8 +4,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import top.wain.bolt.MockRedisTestConfig;
+import top.wain.bolt.config.RedisConfig;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -16,7 +20,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @Date: 2026/07/21
  */
 @WebMvcTest(TrackingController.class)
-@ComponentScan(basePackages = "top.wain.bolt")
+@ComponentScan(basePackages = "top.wain.bolt",
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = RedisConfig.class))
+@Import(MockRedisTestConfig.class)
 class TrackingControllerTest {
 
     @Autowired

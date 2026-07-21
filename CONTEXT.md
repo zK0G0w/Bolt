@@ -27,6 +27,8 @@ BidController (POST /bid)
 | 竞价模式 | 一价拍卖 | 业内主流，逻辑直接 | — |
 | 价格类型 | long（分为单位） | 避免浮点精度问题，性能优先 | — |
 
+| 配置中心与缓存 | Redis + Caffeine + Pub/Sub | Redis 存储配置，Caffeine 5min TTL 兜底，Pub/Sub 实时失效 | [004](docs/adr/004-redis-caffeine-pubsub.md) |
+
 ## 当前进度
 
 - [x] 阶段一：协议模型定义（Record + Sealed Interface）
@@ -34,7 +36,7 @@ BidController (POST /bid)
 - [x] 阶段三：DSP 并发扇出（Virtual Threads + invokeAll）
 - [x] 阶段四：竞价决策（Pattern Matching + 一价拍卖）
 - [x] 阶段五：响应组装 + 追踪埋点
-- [ ] 阶段六：缓存与配置热更新
+- [x] 阶段六：缓存与配置热更新（Redis + Caffeine + Pub/Sub）
 
 ## 待办（跨阶段）
 
@@ -52,6 +54,8 @@ top.wain.bolt
 │   ├── enums/      AdFormat, Carrier, DeviceType 等
 │   ├── request/    BidRequest, Imp, Device, App
 │   └── response/   BidResponse, Bid, SeatBid
-├── repository/     AdSource/DspPlatform 内存 Repository
+├── repository/     AdSource/DspPlatform Redis+Caffeine Repository
+├── cache/          Pub/Sub 缓存失效监听 + 预热
+├── config/         CacheConfig, RedisConfig, DataSeeder
 └── service/        BidService, AuctionService, DspFanOutService
 ```
