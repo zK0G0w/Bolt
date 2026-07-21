@@ -19,8 +19,8 @@ public class MockDspClient implements DspClient {
     public DspBidResult sendBid(AdSource source, BidRequest request, long dspBidFloor) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        // 模拟网络延迟 10-350ms
-        int delayMs = random.nextInt(10, 350);
+        // 模拟网络延迟 10-120ms
+        int delayMs = random.nextInt(10, 120);
         try {
             Thread.sleep(delayMs);
         } catch (InterruptedException e) {
