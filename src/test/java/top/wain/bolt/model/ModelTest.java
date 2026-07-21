@@ -96,16 +96,12 @@ class ModelTest {
     @Test
     void dealType_patternMatching_exhaustive() {
         List<DealType> deals = List.of(
-                new DealType.RTB(100L),
-                new DealType.PD("deal-001", 500L),
-                new DealType.PDB("deal-002", 800L)
+                new DealType.RTB(100L)
         );
 
         for (DealType deal : deals) {
             long floor = switch (deal) {
                 case DealType.RTB rtb -> rtb.bidFloor();
-                case DealType.PD pd -> pd.fixedPrice();
-                case DealType.PDB pdb -> pdb.fixedPrice();
             };
             assert floor > 0;
         }
