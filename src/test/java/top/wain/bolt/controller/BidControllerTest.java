@@ -10,7 +10,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import top.wain.bolt.service.BidService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -29,7 +28,7 @@ class BidControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void bid_validRequest_returns200WithResponseId() throws Exception {
+    void bid_validRequest_noBid_returns204() throws Exception {
         String requestJson = """
                 {
                     "id": "req-001",
@@ -55,10 +54,7 @@ class BidControllerTest {
         mockMvc.perform(post("/bid")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("req-001"))
-                .andExpect(jsonPath("$.bids").isArray())
-                .andExpect(jsonPath("$.bids").isEmpty());
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -86,7 +82,6 @@ class BidControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Forwarded-For", "203.0.113.50, 70.41.3.18")
                         .content(requestJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("req-xff"));
+                .andExpect(status().isNoContent());
     }
 }

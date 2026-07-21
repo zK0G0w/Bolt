@@ -1,5 +1,6 @@
 package top.wain.bolt.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,16 +28,21 @@ public class BidController {
     }
 
     @PostMapping("/bid")
-    public BidResponse bid(@RequestBody BidRequest request,
-                           HttpServletRequest servletRequest) {
+    public ResponseEntity<BidResponse> bid(@RequestBody BidRequest request,
+                                           HttpServletRequest servletRequest) {
         BidContext ctx = new BidContext(
                 request.id() != null ? request.id() : UUID.randomUUID().toString(),
                 System.currentTimeMillis(),
                 getClientIp(servletRequest)
         );
 
-        return ScopedValue.where(BidScopedContext.CURRENT, ctx)
+        BidResponse response = ScopedValue.where(BidScopedContext.CURRENT, ctx)
                 .call(() -> bidService.bid(request));
+
+        if (response.bids().isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(response);
     }
 
     private String getClientIp(HttpServletRequest request) {
