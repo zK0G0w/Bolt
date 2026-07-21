@@ -8,15 +8,12 @@ import top.wain.bolt.model.context.BidContext;
 import top.wain.bolt.model.domain.AuctionResult;
 import top.wain.bolt.model.domain.FanOutResult;
 import top.wain.bolt.model.request.BidRequest;
-import top.wain.bolt.model.response.Bid;
 import top.wain.bolt.model.response.BidResponse;
-import top.wain.bolt.tracking.TrackingUrlGenerator;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
- * @Description: 竞价服务，顶层编排者：调 DSP 扇出拿出价 → 竞价决策选赢家 → 组装响应
+ * @Description: 竞价服务，顶层编排者：扇出 → 竞价 → 组装
  * @Author: WainZeng
  * @Date: 2026/07/21
  */
@@ -24,17 +21,16 @@ import java.util.UUID;
 public class BidService {
 
     private static final Logger log = LoggerFactory.getLogger(BidService.class);
-    private static final String CURRENCY = "CNY";
 
     private final DspFanOutService dspFanOutService;
     private final AuctionService auctionService;
-    private final TrackingUrlGenerator trackingUrlGenerator;
+    private final BidResponseAssembler responseAssembler;
 
     public BidService(DspFanOutService dspFanOutService, AuctionService auctionService,
-                      TrackingUrlGenerator trackingUrlGenerator) {
+                      BidResponseAssembler responseAssembler) {
         this.dspFanOutService = dspFanOutService;
         this.auctionService = auctionService;
-        this.trackingUrlGenerator = trackingUrlGenerator;
+        this.responseAssembler = responseAssembler;
     }
 
     public BidResponse bid(BidRequest request) {
@@ -52,27 +48,7 @@ public class BidService {
                     ctx.requestId(), fanOutResult.results().size());
         }
 
-        String bidid = UUID.randomUUID().toString();
-
-        List<Bid> bids = switch (auctionResult) {
-            case AuctionResult.Win win -> {
-                String impUrl = trackingUrlGenerator.impressionUrl(bidid, win.adSourceId(), win.settlePrice());
-                String clkUrl = trackingUrlGenerator.clickUrl(bidid, win.adSourceId(), win.settlePrice(), "");
-                yield List.of(new Bid(
-                        request.imp().id(),
-                        win.adSourceId(),
-                        win.settlePrice(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        List.of(impUrl),
-                        List.of(clkUrl)
-                ));
-            }
-            case AuctionResult.NoBid() -> List.of();
-        };
-
-        return new BidResponse(request.id(), bidid, CURRENCY, bids);
+        String bidId = UUID.randomUUID().toString();
+        return responseAssembler.assemble(auctionResult, request, bidId);
     }
 }
