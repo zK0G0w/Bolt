@@ -6,6 +6,7 @@ import top.wain.bolt.client.DspClientRouter;
 import top.wain.bolt.model.domain.AdSource;
 import top.wain.bolt.model.domain.DspBidResult;
 import top.wain.bolt.model.domain.DspPlatform;
+import top.wain.bolt.model.domain.FanOutResult;
 import top.wain.bolt.model.request.BidRequest;
 import top.wain.bolt.model.request.Imp;
 import top.wain.bolt.repository.AdSourceRepository;
@@ -13,7 +14,9 @@ import top.wain.bolt.repository.DspPlatformRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * @Description: DSP 并发扇出服务，根据广告位配置并发请求多个 DSP，收集出价结果。
@@ -42,20 +45,23 @@ public class DspFanOutService {
     }
 
     /**
-     * 并发扇出请求 DSP，返回所有广告源的出价结果
+     * 并发扇出请求 DSP，返回所有广告源的出价结果及已解析的广告源配置
      * @param request 上游竞价请求
-     * @return DSP 出价结果列表，可能包含 Success/NoBid/Timeout/Error 混合
+     * @return 扇出结果，包含出价列表和广告源映射
      */
-    public List<DspBidResult> fanOut(BidRequest request) {
+    public FanOutResult fanOut(BidRequest request) {
         Imp imp = request.imp();
         if (imp == null) {
-            return List.of();
+            return new FanOutResult(List.of(), Map.of());
         }
 
         List<AdSource> sources = adSourceRepository.findByAdPositionId(imp.id());
         if (sources.isEmpty()) {
-            return List.of();
+            return new FanOutResult(List.of(), Map.of());
         }
+
+        Map<String, AdSource> resolvedSources = sources.stream()
+                .collect(Collectors.toMap(AdSource::sourceId, s -> s));
 
         long deadlineMs = computeDeadline(request.tmax());
 
@@ -65,12 +71,13 @@ public class DspFanOutService {
 
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<DspBidResult>> futures = executor.invokeAll(tasks, deadlineMs, TimeUnit.MILLISECONDS);
-            return collectResults(futures, sources);
+            return new FanOutResult(collectResults(futures, sources), resolvedSources);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return sources.stream()
+            List<DspBidResult> timeouts = sources.stream()
                     .map(s -> (DspBidResult) new DspBidResult.Timeout(s.sourceId()))
                     .toList();
+            return new FanOutResult(timeouts, resolvedSources);
         }
     }
 

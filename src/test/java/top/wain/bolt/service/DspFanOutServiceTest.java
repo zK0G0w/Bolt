@@ -6,6 +6,7 @@ import top.wain.bolt.client.DspClientRouter;
 import top.wain.bolt.model.domain.AdSource;
 import top.wain.bolt.model.domain.DspBidResult;
 import top.wain.bolt.model.domain.DspPlatform;
+import top.wain.bolt.model.domain.FanOutResult;
 import top.wain.bolt.model.enums.AdFormat;
 import top.wain.bolt.model.enums.DealType;
 import top.wain.bolt.model.request.*;
@@ -51,7 +52,8 @@ class DspFanOutServiceTest {
                 new DspBidResult.Success(source.sourceId(), floor + 50, "ad", "raw");
 
         DspFanOutService service = buildService(sources, fastClient);
-        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500));
+        FanOutResult fanOut = service.fanOut(sampleRequest("imp-001", 500));
+        List<DspBidResult> results = fanOut.results();
 
         assertEquals(2, results.size());
         assertTrue(results.stream().allMatch(r -> r instanceof DspBidResult.Success));
@@ -63,6 +65,11 @@ class DspFanOutServiceTest {
         // Verify PriceMarkup.Fixed: floor=200, then +50 = 250
         DspBidResult.Success s2 = (DspBidResult.Success) results.get(1);
         assertEquals(250L, s2.price());
+
+        // resolvedSources 包含所有广告源
+        assertEquals(2, fanOut.resolvedSources().size());
+        assertNotNull(fanOut.resolvedSources().get("src-001"));
+        assertNotNull(fanOut.resolvedSources().get("src-002"));
     }
 
     @Test
@@ -78,7 +85,7 @@ class DspFanOutServiceTest {
         };
 
         DspFanOutService service = buildService(sources, slowClient);
-        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 50));
+        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 50)).results();
 
         assertEquals(1, results.size());
         assertInstanceOf(DspBidResult.Timeout.class, results.getFirst());
@@ -101,7 +108,7 @@ class DspFanOutServiceTest {
         };
 
         DspFanOutService service = buildService(sources, mixedClient);
-        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 100));
+        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 100)).results();
 
         assertEquals(2, results.size());
         long successCount = results.stream().filter(r -> r instanceof DspBidResult.Success).count();
@@ -121,7 +128,7 @@ class DspFanOutServiceTest {
         };
 
         DspFanOutService service = buildService(sources, errorClient);
-        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 200));
+        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 200)).results();
 
         assertEquals(1, results.size());
         assertInstanceOf(DspBidResult.Error.class, results.getFirst());
@@ -133,7 +140,7 @@ class DspFanOutServiceTest {
                 new DspBidResult.Success(source.sourceId(), 100L, "ad", "raw");
 
         DspFanOutService service = buildService(List.of(), client);
-        List<DspBidResult> results = service.fanOut(sampleRequest("unknown-imp", 200));
+        List<DspBidResult> results = service.fanOut(sampleRequest("unknown-imp", 200)).results();
 
         assertTrue(results.isEmpty());
     }
@@ -149,7 +156,7 @@ class DspFanOutServiceTest {
                 new DspBidResult.Success(source.sourceId(), floor, "ad", "raw");
 
         DspFanOutService service = buildService(sources, echoClient);
-        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500));
+        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500)).results();
 
         DspBidResult.Success s = (DspBidResult.Success) results.getFirst();
         assertEquals(260L, s.price());
@@ -166,7 +173,7 @@ class DspFanOutServiceTest {
                 new DspBidResult.Success(source.sourceId(), floor, "ad", "raw");
 
         DspFanOutService service = buildService(sources, echoClient);
-        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500));
+        List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500)).results();
 
         DspBidResult.Success s = (DspBidResult.Success) results.getFirst();
         assertEquals(350L, s.price());

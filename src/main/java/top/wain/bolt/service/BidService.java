@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import top.wain.bolt.context.BidScopedContext;
 import top.wain.bolt.model.context.BidContext;
 import top.wain.bolt.model.domain.AuctionResult;
-import top.wain.bolt.model.domain.DspBidResult;
+import top.wain.bolt.model.domain.FanOutResult;
 import top.wain.bolt.model.request.BidRequest;
 import top.wain.bolt.model.response.Bid;
 import top.wain.bolt.model.response.BidResponse;
@@ -40,15 +40,16 @@ public class BidService {
     public BidResponse bid(BidRequest request) {
         BidContext ctx = BidScopedContext.current();
 
-        List<DspBidResult> results = dspFanOutService.fanOut(request);
+        FanOutResult fanOutResult = dspFanOutService.fanOut(request);
 
-        AuctionResult auctionResult = auctionService.auction(results, request.imp().bidFloor());
+        AuctionResult auctionResult = auctionService.auction(
+                fanOutResult.results(), request.imp().bidFloor(), fanOutResult.resolvedSources());
 
         switch (auctionResult) {
             case AuctionResult.Win win -> log.info("竞价胜出 reqId={} adSourceId={} bidPrice={} settlePrice={}",
                     ctx.requestId(), win.adSourceId(), win.bidPrice(), win.settlePrice());
             case AuctionResult.NoBid() -> log.info("竞价无赢家 reqId={} candidates={}",
-                    ctx.requestId(), results.size());
+                    ctx.requestId(), fanOutResult.results().size());
         }
 
         String bidid = UUID.randomUUID().toString();

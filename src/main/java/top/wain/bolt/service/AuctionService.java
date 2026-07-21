@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 import top.wain.bolt.model.domain.AdSource;
 import top.wain.bolt.model.domain.AuctionResult;
 import top.wain.bolt.model.domain.DspBidResult;
-import top.wain.bolt.repository.AdSourceRepository;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -18,25 +18,20 @@ import java.util.Optional;
 @Service
 public class AuctionService {
 
-    private final AdSourceRepository adSourceRepository;
-
-    public AuctionService(AdSourceRepository adSourceRepository) {
-        this.adSourceRepository = adSourceRepository;
-    }
-
     /**
      * 执行一价拍卖
      * @param results DSP 扇出返回的出价结果列表
      * @param impBidFloor 媒体侧广告位底价（分/CPM）
+     * @param sources 已解析的广告源配置映射（sourceId → AdSource）
      * @return 竞价结果：Win 或 NoBid
      */
-    public AuctionResult auction(List<DspBidResult> results, long impBidFloor) {
+    public AuctionResult auction(List<DspBidResult> results, long impBidFloor, Map<String, AdSource> sources) {
         record Candidate(DspBidResult.Success bid, AdSource source) {}
 
         List<Candidate> candidates = results.stream()
                 .filter(r -> r instanceof DspBidResult.Success)
                 .map(r -> (DspBidResult.Success) r)
-                .map(s -> new Candidate(s, findSource(s.adSourceId())))
+                .map(s -> new Candidate(s, sources.get(s.adSourceId())))
                 .filter(c -> c.source() != null)
                 .filter(c -> passFloorCheck(c.bid(), c.source(), impBidFloor))
                 .toList();
@@ -69,9 +64,5 @@ public class AuctionService {
             case AdSource.FixedPriceSource _ -> 0;
         };
         return bidPrice * (100 - profitRatio) / 100;
-    }
-
-    private AdSource findSource(String adSourceId) {
-        return adSourceRepository.findById(adSourceId).orElse(null);
     }
 }
