@@ -60,7 +60,7 @@ class ModelTest {
                 List.of("https://track.example.com/imp"),
                 List.of("https://track.example.com/clk")
         );
-        BidResponse response = new BidResponse("req-123", List.of(bid));
+        BidResponse response = new BidResponse("req-123", "bid-001", "CNY", List.of(bid));
 
         String json = mapper.writeValueAsString(response);
         BidResponse deserialized = mapper.readValue(json, BidResponse.class);
