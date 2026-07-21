@@ -51,3 +51,7 @@ logs/
 .aider*
 .augment/
 .gemini/
+.scratch/
+docs/agents
+docs/superpowers
+docs/LEARNING-ROADMAP.md

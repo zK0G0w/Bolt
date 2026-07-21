@@ -43,15 +43,15 @@ public class DspFanOutService {
 
     /**
      * 并发扇出请求 DSP，返回所有广告源的出价结果
-     * @param request 上游竞价请求，取第一个 Imp 的 id 作为广告位标识
+     * @param request 上游竞价请求
      * @return DSP 出价结果列表，可能包含 Success/NoBid/Timeout/Error 混合
      */
     public List<DspBidResult> fanOut(BidRequest request) {
-        if (request.imps() == null || request.imps().isEmpty()) {
+        Imp imp = request.imp();
+        if (imp == null) {
             return List.of();
         }
 
-        Imp imp = request.imps().getFirst();
         List<AdSource> sources = adSourceRepository.findByAdPositionId(imp.id());
         if (sources.isEmpty()) {
             return List.of();

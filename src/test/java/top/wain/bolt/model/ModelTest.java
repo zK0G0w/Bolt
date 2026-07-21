@@ -46,7 +46,7 @@ class ModelTest {
         assertEquals(request.tmax(), deserialized.tmax());
         assertEquals(request.app(), deserialized.app());
         assertEquals(request.user(), deserialized.user());
-        assertEquals(request.imps().size(), deserialized.imps().size());
+        assertEquals(request.imp(), deserialized.imp());
     }
 
     @Test
@@ -219,6 +219,6 @@ class ModelTest {
 
         Imp imp = new Imp("imp-001", new AdFormat.NativeFeed(1, 30, 50), new DealType.RTB(200L), 200L, 640, 320);
 
-        return new BidRequest("req-001", List.of(imp), app, device, user, 100);
+        return new BidRequest("req-001", imp, app, device, user, 100);
     }
 }

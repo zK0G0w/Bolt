@@ -27,14 +27,14 @@ class BidControllerTest {
         String requestJson = """
                 {
                     "id": "req-001",
-                    "imps": [{
+                    "imp": {
                         "id": "imp-001",
                         "format": {"type": "native_feed", "imageCount": 1, "titleLen": 30, "textLen": 50},
                         "dealType": {"type": "rtb", "bidFloor": 200},
                         "bidFloor": 200,
                         "width": 640,
                         "height": 320
-                    }],
+                    },
                     "app": {"id": "app-001", "name": "测试APP", "packageName": "com.test", "version": "1.0"},
                     "device": {
                         "id": {"oaid": "oaid-123"},
@@ -69,14 +69,14 @@ class BidControllerTest {
         String requestJson = """
                 {
                     "id": "req-nobid",
-                    "imps": [{
+                    "imp": {
                         "id": "unknown-imp",
                         "format": {"type": "native_feed", "imageCount": 1, "titleLen": 30, "textLen": 50},
                         "dealType": {"type": "rtb", "bidFloor": 200},
                         "bidFloor": 200,
                         "width": 640,
                         "height": 320
-                    }],
+                    },
                     "app": {"id": "app-001", "name": "A", "packageName": "com.a", "version": "1"},
                     "device": {"id": {"oaid": "oaid-1"}, "hardware": {"type": "PHONE", "make": "X", "model": "Y", "os": "ANDROID", "osVersion": "1", "screenWidth": 1, "screenHeight": 1, "connection": "WIFI", "carrier": "CHINA_MOBILE"}, "geo": {"lon": 0, "lat": 0, "ip": "1.1.1.1", "country": "CN", "region": ""}},
                     "user": {"id": "u1", "interests": []},
@@ -95,14 +95,14 @@ class BidControllerTest {
         String requestJson = """
                 {
                     "id": "req-xff",
-                    "imps": [{
+                    "imp": {
                         "id": "imp-001",
                         "format": {"type": "native_feed", "imageCount": 1, "titleLen": 30, "textLen": 50},
                         "dealType": {"type": "rtb", "bidFloor": 200},
                         "bidFloor": 200,
                         "width": 640,
                         "height": 320
-                    }],
+                    },
                     "app": {"id": "app-001", "name": "A", "packageName": "com.a", "version": "1"},
                     "device": {"id": {"oaid": "oaid-1"}, "hardware": {"type": "PHONE", "make": "X", "model": "Y", "os": "ANDROID", "osVersion": "1", "screenWidth": 1, "screenHeight": 1, "connection": "WIFI", "carrier": "CHINA_MOBILE"}, "geo": {"lon": 0, "lat": 0, "ip": "1.1.1.1", "country": "CN", "region": ""}},
                     "user": {"id": "u1", "interests": []},

@@ -17,7 +17,7 @@ class MockDspClientTest {
     private BidRequest sampleRequest() {
         return new BidRequest(
                 "req-001",
-                List.of(new Imp("imp-001", new AdFormat.NativeFeed(1, 30, 50), new DealType.RTB(200L), 200L, 640, 320)),
+                new Imp("imp-001", new AdFormat.NativeFeed(1, 30, 50), new DealType.RTB(200L), 200L, 640, 320),
                 new App("app-001", "TestApp", "com.test", "1.0"),
                 new Device(
                         new DeviceId("oaid-123", null, null, null),

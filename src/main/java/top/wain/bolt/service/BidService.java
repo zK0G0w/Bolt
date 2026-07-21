@@ -1,8 +1,11 @@
 package top.wain.bolt.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import top.wain.bolt.context.BidScopedContext;
 import top.wain.bolt.model.context.BidContext;
+import top.wain.bolt.model.domain.AuctionResult;
 import top.wain.bolt.model.domain.DspBidResult;
 import top.wain.bolt.model.request.BidRequest;
 import top.wain.bolt.model.response.Bid;
@@ -18,10 +21,14 @@ import java.util.List;
 @Service
 public class BidService {
 
-    private final DspFanOutService dspFanOutService;
+    private static final Logger log = LoggerFactory.getLogger(BidService.class);
 
-    public BidService(DspFanOutService dspFanOutService) {
+    private final DspFanOutService dspFanOutService;
+    private final AuctionService auctionService;
+
+    public BidService(DspFanOutService dspFanOutService, AuctionService auctionService) {
         this.dspFanOutService = dspFanOutService;
+        this.auctionService = auctionService;
     }
 
     public BidResponse bid(BidRequest request) {
@@ -29,23 +36,29 @@ public class BidService {
 
         List<DspBidResult> results = dspFanOutService.fanOut(request);
 
-        // TODO: 阶段四 — 替换为竞价决策逻辑（排序、比价、利润扣减）
-        List<Bid> bids = results.stream()
-                .filter(r -> r instanceof DspBidResult.Success)
-                .map(r -> (DspBidResult.Success) r)
-                .findFirst()
-                .map(s -> List.of(new Bid(
-                        request.imps().getFirst().id(),
-                        s.adSourceId(),
-                        s.price(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        List.of(),
-                        List.of()
-                )))
-                .orElse(List.of());
+        AuctionResult auctionResult = auctionService.auction(results, request.imp().bidFloor());
+
+        switch (auctionResult) {
+            case AuctionResult.Win win -> log.info("竞价胜出 reqId={} adSourceId={} bidPrice={} settlePrice={}",
+                    ctx.requestId(), win.adSourceId(), win.bidPrice(), win.settlePrice());
+            case AuctionResult.NoBid() -> log.info("竞价无赢家 reqId={} candidates={}",
+                    ctx.requestId(), results.size());
+        }
+
+        List<Bid> bids = switch (auctionResult) {
+            case AuctionResult.Win win -> List.of(new Bid(
+                    request.imp().id(),
+                    win.adSourceId(),
+                    win.settlePrice(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    List.of()
+            ));
+            case AuctionResult.NoBid() -> List.of();
+        };
 
         return new BidResponse(request.id(), bids);
     }

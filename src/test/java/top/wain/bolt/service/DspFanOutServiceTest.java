@@ -24,7 +24,7 @@ class DspFanOutServiceTest {
     private BidRequest sampleRequest(String impId, int tmax) {
         return new BidRequest(
                 "req-001",
-                List.of(new Imp(impId, new AdFormat.NativeFeed(1, 30, 50), new DealType.RTB(200L), 200L, 640, 320)),
+                new Imp(impId, new AdFormat.NativeFeed(1, 30, 50), new DealType.RTB(200L), 200L, 640, 320),
                 new App("app-001", "TestApp", "com.test", "1.0"),
                 new Device(
                         new DeviceId("oaid-123", null, null, null),
@@ -173,8 +173,19 @@ class DspFanOutServiceTest {
     }
 
     private DspFanOutService buildService(List<AdSource> sources, DspClient client) {
-        AdSourceRepository adSourceRepo = adPositionId ->
-                "imp-001".equals(adPositionId) ? sources : List.of();
+        AdSourceRepository adSourceRepo = new AdSourceRepository() {
+            @Override
+            public List<AdSource> findByAdPositionId(String adPositionId) {
+                return "imp-001".equals(adPositionId) ? sources : List.of();
+            }
+
+            @Override
+            public java.util.Optional<AdSource> findById(String sourceId) {
+                return sources.stream()
+                        .filter(s -> s.sourceId().equals(sourceId))
+                        .findFirst();
+            }
+        };
 
         Map<String, DspPlatform> platforms = Map.of(
                 "plat-001", platform("plat-001", "huawei"),

@@ -5,6 +5,7 @@ import top.wain.bolt.model.domain.AdSource;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @Description: AdSourceRepository 内存实现，写死测试数据，后续阶段六切换为 Redis
@@ -34,5 +35,13 @@ public class InMemoryAdSourceRepository implements AdSourceRepository {
     @Override
     public List<AdSource> findByAdPositionId(String adPositionId) {
         return store.getOrDefault(adPositionId, List.of());
+    }
+
+    @Override
+    public Optional<AdSource> findById(String sourceId) {
+        return store.values().stream()
+                .flatMap(List::stream)
+                .filter(s -> s.sourceId().equals(sourceId))
+                .findFirst();
     }
 }
