@@ -1,19 +1,16 @@
 package top.wain.bolt.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.stereotype.Component;
-import top.wain.bolt.model.domain.AdSource;
-import top.wain.bolt.model.domain.DspPlatform;
-
-import java.util.List;
+import top.wain.bolt.repository.RedisAdSourceRepository;
+import top.wain.bolt.repository.RedisDspPlatformRepository;
 
 /**
- * @Description: Redis Pub/Sub 缓存失效监听器，收到消息后 evict 对应 Caffeine 条目
+ * @Description: Redis Pub/Sub 缓存失效监听器，按 entity 类型路由到对应 ManagedCache
  * @Author: WainZeng
  * @Date: 2026/07/21
  */
@@ -22,18 +19,15 @@ public class CacheInvalidationListener implements MessageListener {
 
     private static final Logger log = LoggerFactory.getLogger(CacheInvalidationListener.class);
 
-    private final Cache<String, AdSource> adSourceCache;
-    private final Cache<String, List<String>> adSourceIndexCache;
-    private final Cache<String, DspPlatform> dspPlatformCache;
+    private final RedisAdSourceRepository adSourceRepository;
+    private final RedisDspPlatformRepository dspPlatformRepository;
     private final ObjectMapper objectMapper;
 
-    public CacheInvalidationListener(Cache<String, AdSource> adSourceCache,
-                                     Cache<String, List<String>> adSourceIndexCache,
-                                     Cache<String, DspPlatform> dspPlatformCache,
+    public CacheInvalidationListener(RedisAdSourceRepository adSourceRepository,
+                                     RedisDspPlatformRepository dspPlatformRepository,
                                      ObjectMapper objectMapper) {
-        this.adSourceCache = adSourceCache;
-        this.adSourceIndexCache = adSourceIndexCache;
-        this.dspPlatformCache = dspPlatformCache;
+        this.adSourceRepository = adSourceRepository;
+        this.dspPlatformRepository = dspPlatformRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -43,15 +37,10 @@ public class CacheInvalidationListener implements MessageListener {
             var msg = objectMapper.readValue(message.getBody(), CacheInvalidationMessage.class);
             switch (msg.entity()) {
                 case "adsource" -> {
-                    adSourceCache.invalidate(msg.id());
-                    // 索引缓存整体失效，下次访问时回源重建
-                    adSourceIndexCache.invalidateAll();
-                    log.info("缓存失效: adsource id={} action={}", msg.id(), msg.action());
+                    adSourceRepository.entityCache().invalidate(msg.id());
+                    adSourceRepository.indexCache().invalidateAll();
                 }
-                case "dsp" -> {
-                    dspPlatformCache.invalidate(msg.id());
-                    log.info("缓存失效: dsp id={} action={}", msg.id(), msg.action());
-                }
+                case "dsp" -> dspPlatformRepository.cache().invalidate(msg.id());
                 default -> log.warn("未知的缓存失效实体类型: {}", msg.entity());
             }
         } catch (Exception e) {

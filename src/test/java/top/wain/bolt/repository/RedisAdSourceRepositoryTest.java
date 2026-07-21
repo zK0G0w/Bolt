@@ -1,8 +1,6 @@
 package top.wain.bolt.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,8 +17,6 @@ class RedisAdSourceRepositoryTest {
     private StringRedisTemplate redisTemplate;
     private ValueOperations<String, String> valueOps;
     private ObjectMapper objectMapper;
-    private Cache<String, AdSource> entityCache;
-    private Cache<String, List<String>> indexCache;
     private RedisAdSourceRepository repository;
 
     @BeforeEach
@@ -29,9 +25,7 @@ class RedisAdSourceRepositoryTest {
         valueOps = mock(ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
         objectMapper = new ObjectMapper();
-        entityCache = Caffeine.newBuilder().build();
-        indexCache = Caffeine.newBuilder().build();
-        repository = new RedisAdSourceRepository(entityCache, indexCache, redisTemplate, objectMapper);
+        repository = new RedisAdSourceRepository(redisTemplate, objectMapper);
     }
 
     @Test
@@ -50,7 +44,7 @@ class RedisAdSourceRepositoryTest {
     @Test
     void findById_cacheHit_doesNotHitRedis() throws Exception {
         var source = new AdSource.RtbSource("src-001", "imp-001", "plat-001", "slot-001", 200, 150L, 15, new AdSource.PriceMarkup.Ratio(20));
-        entityCache.put("src-001", source);
+        repository.entityCache().put("src-001", source);
 
         var result = repository.findById("src-001");
 
@@ -81,4 +75,3 @@ class RedisAdSourceRepositoryTest {
         assertEquals(2, results.size());
     }
 }
-
