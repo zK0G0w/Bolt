@@ -11,7 +11,7 @@ package top.wain.bolt.model.domain;
  * @param trafficQps 平台QPS限制，0表示不限
  * @param trafficFrequency 用户日频次上限，0表示不限
  */
-public record SellPlatform(
+public record DspPlatform(
         String platformId,
         String name,
         String platformCode,

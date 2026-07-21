@@ -81,8 +81,8 @@ class DomainModelTest {
     }
 
     @Test
-    void sellPlatform_record_basics() {
-        SellPlatform platform = new SellPlatform(
+    void dspPlatform_record_basics() {
+        DspPlatform platform = new DspPlatform(
                 "plat-001", "华为ADX", "huawei",
                 "https://adx.huawei.com/bid", 1000, 50
         );
@@ -96,9 +96,9 @@ class DomainModelTest {
     }
 
     @Test
-    void sellPlatform_record_equals() {
-        SellPlatform a = new SellPlatform("plat-001", "华为ADX", "huawei", "https://adx.huawei.com/bid", 1000, 50);
-        SellPlatform b = new SellPlatform("plat-001", "华为ADX", "huawei", "https://adx.huawei.com/bid", 1000, 50);
+    void dspPlatform_record_equals() {
+        DspPlatform a = new DspPlatform("plat-001", "华为ADX", "huawei", "https://adx.huawei.com/bid", 1000, 50);
+        DspPlatform b = new DspPlatform("plat-001", "华为ADX", "huawei", "https://adx.huawei.com/bid", 1000, 50);
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
