@@ -1,10 +1,18 @@
 package top.wain.bolt.model.domain;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 /**
  * @Description: 广告源配置，竞价编排的最小调度单元。按竞价模式分型：RTB实时竞价 / 固定出价
  * @Author: WainZeng
  * @Date: 2026/07/20
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = AdSource.RtbSource.class, name = "rtb"),
+        @JsonSubTypes.Type(value = AdSource.FixedPriceSource.class, name = "fixed_price")
+})
 public sealed interface AdSource {
 
     /** 广告源唯一标识 */
@@ -67,6 +75,11 @@ public sealed interface AdSource {
     /**
      * 加价策略，决定发给DSP的底价如何在原始底价基础上调整
      */
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = PriceMarkup.Ratio.class, name = "ratio"),
+            @JsonSubTypes.Type(value = PriceMarkup.Fixed.class, name = "fixed")
+    })
     sealed interface PriceMarkup {
 
         /** 比例加价：底价 * (100 + percent) / 100 */

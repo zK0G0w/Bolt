@@ -31,10 +31,6 @@ spring:
     deserialization:
       fail-on-unknown-properties: false
 
-  # Cache
-  cache:
-    type: caffeine
-
 # Actuator
 management:
   endpoints:
