@@ -70,7 +70,13 @@ public sealed interface AdSource {
     sealed interface PriceMarkup {
 
         /** 比例加价：底价 * (100 + percent) / 100 */
-        record Ratio(int percent) implements PriceMarkup {}
+        record Ratio(int percent) implements PriceMarkup {
+            public Ratio {
+                if (percent < 0) {
+                    throw new IllegalArgumentException("percent must be >= 0, got: " + percent);
+                }
+            }
+        }
 
         /** 固定提交价：直接用此值作为发给DSP的底价 */
         record Fixed(long price) implements PriceMarkup {}
