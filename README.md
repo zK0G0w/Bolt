@@ -58,8 +58,13 @@ make bid      # 发起竞价请求
 make help     # 查看所有可用命令
 make bench    # 压测（200 并发）
 make test     # 运行测试
+make reseed   # 清空 Redis 中的 bolt 配置
 make down     # 停止容器
 ```
+
+> `make bid` 返回 204（无出价）时，先看应用日志有没有 `无匹配的 DSP 适配器`。
+> Redis 使用命名卷持久化，样本配置仅在首次启动时播种；若卷里残留旧版本配置（`platformCode` 不在已部署适配器范围内），
+> 执行 `make reseed` 后重启应用重新播种。配置格式见 [ADR-005](docs/adr/005-config-storage-contract.md)。
 
 ## 性能基准
 

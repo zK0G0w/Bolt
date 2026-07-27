@@ -1,4 +1,6 @@
-.PHONY: up down dev test bid bench clean help
+.PHONY: up down dev test bid bench reseed clean help
+
+REDIS_PASSWORD ?= redis123456
 
 .DEFAULT_GOAL := help
 
@@ -24,6 +26,11 @@ bench: ## 压测（200 并发，2000 请求）
 		-H "Content-Type: application/json" \
 		-D examples/sample-bid-request.json \
 		http://localhost:9292/bid
+
+reseed: ## 清空 Redis 中的 bolt 配置，重启应用后重新播种
+	@docker compose exec -T -e RP='$(REDIS_PASSWORD)' redis sh -c \
+		'redis-cli -a "$$RP" --no-auth-warning --scan --pattern "bolt:*" \
+			| xargs -r redis-cli -a "$$RP" --no-auth-warning del'
 
 clean: ## 清理构建产物
 	./mvnw clean

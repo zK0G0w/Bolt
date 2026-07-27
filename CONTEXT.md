@@ -28,6 +28,8 @@ BidController (POST /bid)
 | 价格类型 | long（分为单位） | 避免浮点精度问题，性能优先 | — |
 
 | 配置中心与缓存 | Redis + Caffeine + Pub/Sub | Redis 存储配置，Caffeine 5min TTL 兜底，Pub/Sub 实时失效 | [004](docs/adr/004-redis-caffeine-pubsub.md) |
+| 配置写侧归属 | Bolt 只读，管理端独立在外 | 配置管理与投放执行属不同上下文，Redis key/JSON/消息格式作为跨服务契约固化 | [005](docs/adr/005-config-storage-contract.md) |
+| DSP 适配器路由 | platformCode 由实现自报，无兜底 | 静默 fallback 到 mock 会在配置可人工编辑后返回假出价 | [005](docs/adr/005-config-storage-contract.md) |
 
 ## 当前进度
 
