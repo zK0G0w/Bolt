@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
+
 /**
  * @Description: 追踪埋点接口，AES 解密参数 + 时间戳防重放 + 落地页服务端解出
  * @Author: WainZeng
@@ -46,28 +48,20 @@ public class TrackingController {
      */
     @GetMapping("/i")
     public ResponseEntity<byte[]> impression(@RequestParam String p) {
-        String decrypted = cipher.decrypt(p);
-        if (decrypted == null) {
-            log.warn("展示追踪解密失败");
+        Optional<TrackingPayload> parsed = parse(p);
+        if (parsed.isEmpty()) {
+            log.warn("展示追踪解析失败");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        String[] parts = decrypted.split("\\|", 4);
-        if (parts.length < 4) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        String bid = parts[0];
-        String src = parts[1];
-        long price = Long.parseLong(parts[2]);
-        long ts = Long.parseLong(parts[3]);
-
-        if (isExpired(ts)) {
-            log.warn("展示追踪已过期 bid={} ts={}", bid, ts);
+        TrackingPayload payload = parsed.get();
+        if (payload.isExpired(expireMs)) {
+            log.warn("展示追踪已过期 bid={} ts={}", payload.bidId(), payload.timestamp());
             return ResponseEntity.status(HttpStatus.GONE).build();
         }
 
-        log.info("展示上报 bid={} src={} price={} ts={}", bid, src, price, ts);
+        log.info("展示上报 bid={} src={} price={} ts={}",
+                payload.bidId(), payload.adSourceId(), payload.price(), payload.timestamp());
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_GIF)
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
@@ -80,39 +74,31 @@ public class TrackingController {
      */
     @GetMapping("/c")
     public ResponseEntity<Void> click(@RequestParam String p) {
-        String decrypted = cipher.decrypt(p);
-        if (decrypted == null) {
-            log.warn("点击追踪解密失败");
+        Optional<TrackingPayload> parsed = parse(p);
+        if (parsed.isEmpty()) {
+            log.warn("点击追踪解析失败");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        String[] parts = decrypted.split("\\|", 5);
-        if (parts.length < 5) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        String bid = parts[0];
-        String src = parts[1];
-        long price = Long.parseLong(parts[2]);
-        long ts = Long.parseLong(parts[3]);
-        String landingUrl = parts[4];
-
-        if (isExpired(ts)) {
-            log.warn("点击追踪已过期 bid={} ts={}", bid, ts);
+        TrackingPayload payload = parsed.get();
+        if (payload.isExpired(expireMs)) {
+            log.warn("点击追踪已过期 bid={} ts={}", payload.bidId(), payload.timestamp());
             return ResponseEntity.status(HttpStatus.GONE).build();
         }
 
-        log.info("点击上报 bid={} src={} price={} ts={}", bid, src, price, ts);
+        log.info("点击上报 bid={} src={} price={} ts={}",
+                payload.bidId(), payload.adSourceId(), payload.price(), payload.timestamp());
 
-        if (landingUrl.isBlank()) {
+        if (!payload.hasLandingUrl()) {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, landingUrl)
+                .header(HttpHeaders.LOCATION, payload.landingUrl())
                 .build();
     }
 
-    private boolean isExpired(long ts) {
-        return System.currentTimeMillis() - ts > expireMs;
+    /** 解密并解析负载，解密失败或格式非法统一返回空 */
+    private Optional<TrackingPayload> parse(String cipherText) {
+        return TrackingPayload.decode(cipher.decrypt(cipherText));
     }
 }

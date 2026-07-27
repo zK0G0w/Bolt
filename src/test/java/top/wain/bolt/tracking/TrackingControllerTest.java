@@ -51,8 +51,7 @@ class TrackingControllerTest {
     @Test
     void impression_expiredPayload_returns410() throws Exception {
         TrackingCipher cipher = generator.cipher();
-        String payload = "bid-exp|src-exp|100|0";
-        String p = cipher.encrypt(payload);
+        String p = cipher.encrypt(new TrackingPayload("bid-exp", "src-exp", 100L, 0L, "").encode());
 
         mockMvc.perform(get("/i").param("p", p))
                 .andExpect(status().isGone());
@@ -86,8 +85,8 @@ class TrackingControllerTest {
     @Test
     void click_expiredPayload_returns410() throws Exception {
         TrackingCipher cipher = generator.cipher();
-        String payload = "bid-exp|src-exp|100|0|https://example.com";
-        String p = cipher.encrypt(payload);
+        String p = cipher.encrypt(
+                new TrackingPayload("bid-exp", "src-exp", 100L, 0L, "https://example.com").encode());
 
         mockMvc.perform(get("/c").param("p", p))
                 .andExpect(status().isGone());

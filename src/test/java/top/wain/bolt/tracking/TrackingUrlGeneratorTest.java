@@ -34,6 +34,12 @@ class TrackingUrlGeneratorTest {
 
         assertNotNull(decrypted);
         assertTrue(decrypted.startsWith("bid-003|src-003|200|"));
+
+        // 展示链接的 landingUrl 为空串，字段数与点击链接一致
+        TrackingPayload payload = TrackingPayload.decode(decrypted).orElseThrow();
+        assertEquals("bid-003", payload.bidId());
+        assertEquals(200L, payload.price());
+        assertEquals("", payload.landingUrl());
     }
 
     @Test
