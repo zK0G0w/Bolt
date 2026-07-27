@@ -1,6 +1,10 @@
 .PHONY: up down dev test bid bench reseed clean help
 
 REDIS_PASSWORD ?= redis123456
+# dev profile 使用 db10，见 application-dev.yml
+REDIS_DB ?= 10
+# 未使用 docker compose 时的 Redis 容器名，如 make reseed REDIS_CONTAINER=redis7
+REDIS_CONTAINER ?= redis
 
 .DEFAULT_GOAL := help
 
@@ -27,10 +31,17 @@ bench: ## 压测（200 并发，2000 请求）
 		-D examples/sample-bid-request.json \
 		http://localhost:9292/bid
 
-reseed: ## 清空 Redis 中的 bolt 配置，重启应用后重新播种
-	@docker compose exec -T -e RP='$(REDIS_PASSWORD)' redis sh -c \
-		'redis-cli -a "$$RP" --no-auth-warning --scan --pattern "bolt:*" \
-			| xargs -r redis-cli -a "$$RP" --no-auth-warning del'
+reseed: ## 清空 Redis 中 db$(REDIS_DB) 的 bolt:* 键，重启应用后重新播种
+	@EXEC="docker compose exec -T redis"; \
+	docker compose ps --services --status running 2>/dev/null | grep -qx redis \
+		|| EXEC="docker exec $(REDIS_CONTAINER)"; \
+	CLI="redis-cli -a $(REDIS_PASSWORD) --no-auth-warning -n $(REDIS_DB)"; \
+	KEYS=$$($$EXEC $$CLI --scan --pattern 'bolt:*' 2>/dev/null) \
+		|| { echo "无法连接 Redis 容器，可指定 REDIS_CONTAINER=<名称>"; exit 1; }; \
+	if [ -n "$$KEYS" ]; then \
+		echo "$$KEYS" | tr '\n' ' ' | xargs $$EXEC $$CLI del; \
+		echo "已清空，重启应用后重新播种"; \
+	else echo "db$(REDIS_DB) 无 bolt:* 键，无需清理"; fi
 
 clean: ## 清理构建产物
 	./mvnw clean
