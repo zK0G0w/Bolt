@@ -30,6 +30,15 @@ public sealed interface AdSource {
     /** 请求超时，单位毫秒 */
     int timeoutMs();
 
+    /** 发给 DSP 的底价：引擎侧底价按加价策略调整后的值 */
+    long submitPrice();
+
+    /** 引擎侧准入底价：DSP 出价必须不低于此值才有效 */
+    long floorPrice();
+
+    /** 媒体结算价：DSP 出价扣除引擎利润后的值，单位分/CPM */
+    long settlePrice(long bidPrice);
+
     /**
      * RTB 竞价模式广告源
      * 携带底价、利润率、加价策略，竞价阶段参与实时竞拍
@@ -51,7 +60,23 @@ public sealed interface AdSource {
             long bidFloor,
             int profitRatio,
             PriceMarkup markup
-    ) implements AdSource {}
+    ) implements AdSource {
+
+        @Override
+        public long submitPrice() {
+            return markup.apply(bidFloor);
+        }
+
+        @Override
+        public long floorPrice() {
+            return bidFloor;
+        }
+
+        @Override
+        public long settlePrice(long bidPrice) {
+            return bidPrice * (100 - profitRatio) / 100;
+        }
+    }
 
     /**
      * 固定出价模式广告源
@@ -70,7 +95,24 @@ public sealed interface AdSource {
             String platformSlotId,
             int timeoutMs,
             long fixedBidPrice
-    ) implements AdSource {}
+    ) implements AdSource {
+
+        @Override
+        public long submitPrice() {
+            return fixedBidPrice;
+        }
+
+        @Override
+        public long floorPrice() {
+            return fixedBidPrice;
+        }
+
+        /** 固定价模式不抽取引擎利润，出价即结算价 */
+        @Override
+        public long settlePrice(long bidPrice) {
+            return bidPrice;
+        }
+    }
 
     /**
      * 加价策略，决定发给DSP的底价如何在原始底价基础上调整
@@ -82,6 +124,9 @@ public sealed interface AdSource {
     })
     sealed interface PriceMarkup {
 
+        /** 将原始底价按当前策略调整为发给 DSP 的底价 */
+        long apply(long base);
+
         /** 比例加价：底价 * (100 + percent) / 100 */
         record Ratio(int percent) implements PriceMarkup {
             public Ratio {
@@ -89,9 +134,19 @@ public sealed interface AdSource {
                     throw new IllegalArgumentException("percent must be >= 0, got: " + percent);
                 }
             }
+
+            @Override
+            public long apply(long base) {
+                return base * (100 + percent) / 100;
+            }
         }
 
         /** 固定提交价：直接用此值作为发给DSP的底价 */
-        record Fixed(long price) implements PriceMarkup {}
+        record Fixed(long price) implements PriceMarkup {
+            @Override
+            public long apply(long base) {
+                return price;
+            }
+        }
     }
 }

@@ -33,7 +33,8 @@ public class AuctionService {
                 .map(r -> (DspBidResult.Success) r)
                 .map(s -> new Candidate(s, sources.get(s.adSourceId())))
                 .filter(c -> c.source() != null)
-                .filter(c -> passFloorCheck(c.bid(), c.source(), impBidFloor))
+                // 底价检查：出价必须同时高于媒体底价和引擎侧广告源底价
+                .filter(c -> c.bid().price() >= impBidFloor && c.bid().price() >= c.source().floorPrice())
                 .toList();
 
         Optional<Candidate> winner = candidates.stream()
@@ -43,26 +44,8 @@ public class AuctionService {
                 .map(c -> (AuctionResult) new AuctionResult.Win(
                         c.bid().adSourceId(),
                         c.bid().price(),
-                        computeSettlePrice(c.bid().price(), c.source()),
+                        c.source().settlePrice(c.bid().price()),
                         c.bid().adPayload()))
                 .orElse(new AuctionResult.NoBid());
-    }
-
-    /** 底价检查：出价必须同时高于媒体底价和引擎侧广告源底价 */
-    private boolean passFloorCheck(DspBidResult.Success bid, AdSource source, long impBidFloor) {
-        long sourceBidFloor = switch (source) {
-            case AdSource.RtbSource rtb -> rtb.bidFloor();
-            case AdSource.FixedPriceSource fixed -> fixed.fixedBidPrice();
-        };
-        return bid.price() >= impBidFloor && bid.price() >= sourceBidFloor;
-    }
-
-    /** 利润扣减：媒体结算价 = 出价 × (100 - profitRatio) / 100 */
-    private long computeSettlePrice(long bidPrice, AdSource source) {
-        int profitRatio = switch (source) {
-            case AdSource.RtbSource rtb -> rtb.profitRatio();
-            case AdSource.FixedPriceSource _ -> 0;
-        };
-        return bidPrice * (100 - profitRatio) / 100;
     }
 }

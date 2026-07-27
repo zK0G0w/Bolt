@@ -90,7 +90,7 @@ public class DspFanOutService {
             return new DspBidResult.Error(source.sourceId(), "platform not found: " + source.platformId());
         }
 
-        long dspBidFloor = computeDspBidFloor(source);
+        long dspBidFloor = source.submitPrice();
         DspClient client = dspClientRouter.route(platform.platformCode());
 
         try {
@@ -101,17 +101,6 @@ public class DspFanOutService {
         } catch (Exception e) {
             return new DspBidResult.Error(source.sourceId(), e.getMessage());
         }
-    }
-
-    /** 根据 AdSource 类型和加价策略计算发给 DSP 的底价 */
-    private long computeDspBidFloor(AdSource source) {
-        return switch (source) {
-            case AdSource.RtbSource rtb -> switch (rtb.markup()) {
-                case AdSource.PriceMarkup.Ratio(var percent) -> rtb.bidFloor() * (100 + percent) / 100;
-                case AdSource.PriceMarkup.Fixed(var price) -> price;
-            };
-            case AdSource.FixedPriceSource fixed -> fixed.fixedBidPrice();
-        };
     }
 
     /** 计算 invokeAll 的总超时：tmax - 安全余量，最低 10ms */
