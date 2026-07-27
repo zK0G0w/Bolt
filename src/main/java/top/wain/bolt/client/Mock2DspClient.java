@@ -8,14 +8,15 @@ import top.wain.bolt.model.request.BidRequest;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * @Description: DSP 客户端 Mock 实现，内存模拟出价（随机价格、随机延迟），用于开发阶段跑通链路
+ * @Description: 第二个 DSP Mock 实现，出价保守、响应更快、不出价概率更高，
+ *               与 MockDspClient 形成可观测差异以验证 platformCode 路由生效
  * @Author: WainZeng
- * @Date: 2026/07/22
+ * @Date: 2026/07/27
  */
 @Component
-public class MockDspClient implements DspClient {
+public class Mock2DspClient implements DspClient {
 
-    public static final String PLATFORM_CODE = "mock";
+    public static final String PLATFORM_CODE = "mock2";
 
     @Override
     public String platformCode() {
@@ -26,24 +27,23 @@ public class MockDspClient implements DspClient {
     public DspBidResult sendBid(AdSource source, BidRequest request, long dspBidFloor) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        // 模拟网络延迟 10-120ms
-        int delayMs = random.nextInt(10, 120);
+        // 模拟网络延迟 5-60ms，比 mock 更快
         try {
-            Thread.sleep(delayMs);
+            Thread.sleep(random.nextInt(5, 60));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return new DspBidResult.Timeout(source.sourceId());
         }
 
-        // 20% 概率不出价
-        if (random.nextInt(100) < 20) {
+        // 40% 概率不出价，比 mock 更保守
+        if (random.nextInt(100) < 40) {
             return new DspBidResult.NoBid(source.sourceId());
         }
 
-        // 出价：底价的 100%~180% 浮动
-        long price = dspBidFloor + random.nextLong(0, dspBidFloor);
-        String adPayload = "{\"creative\":\"mock-ad-" + source.sourceId() + "\"}";
-        String rawResponse = "{\"bid\":" + price + ",\"source\":\"" + source.sourceId() + "\"}";
+        // 出价：底价的 100%~130% 浮动，加价幅度低于 mock
+        long price = dspBidFloor + random.nextLong(0, Math.max(dspBidFloor * 30 / 100, 1));
+        String adPayload = "{\"creative\":\"mock2-ad-" + source.sourceId() + "\"}";
+        String rawResponse = "{\"bid\":" + price + ",\"source\":\"" + source.sourceId() + "\",\"dsp\":\"mock2\"}";
 
         return new DspBidResult.Success(source.sourceId(), price, adPayload, rawResponse);
     }

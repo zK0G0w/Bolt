@@ -7,6 +7,7 @@ import top.wain.bolt.model.request.*;
 import top.wain.bolt.model.enums.*;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -72,11 +73,27 @@ class MockDspClientTest {
     }
 
     @Test
-    void router_defaultsToMockClient() {
+    void router_routesByPlatformCode() {
         MockDspClient mock = new MockDspClient();
-        DspClientRouter router = new DspClientRouter(List.of(mock));
+        Mock2DspClient mock2 = new Mock2DspClient();
+        DspClientRouter router = new DspClientRouter(List.of(mock, mock2));
 
-        DspClient resolved = router.route("huawei");
-        assertSame(mock, resolved);
+        assertSame(mock, router.route("mock").orElseThrow());
+        assertSame(mock2, router.route("mock2").orElseThrow());
+    }
+
+    @Test
+    void router_unknownCode_returnsEmpty() {
+        DspClientRouter router = new DspClientRouter(List.of(new MockDspClient()));
+
+        // 无对应适配器时不再兜底降级，避免静默返回 mock 出价
+        assertTrue(router.route("huawei").isEmpty());
+    }
+
+    @Test
+    void router_supportedCodes_reflectsDeployedAdapters() {
+        DspClientRouter router = new DspClientRouter(List.of(new MockDspClient(), new Mock2DspClient()));
+
+        assertEquals(Set.of("mock", "mock2"), router.supportedCodes());
     }
 }

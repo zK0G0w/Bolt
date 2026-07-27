@@ -1,5 +1,7 @@
 package top.wain.bolt.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import top.wain.bolt.client.DspClient;
 import top.wain.bolt.client.DspClientRouter;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class DspFanOutService {
+
+    private static final Logger log = LoggerFactory.getLogger(DspFanOutService.class);
 
     /** 上游未传 tmax 时的默认总超时（ms） */
     private static final int DEFAULT_TIMEOUT_MS = 150;
@@ -90,8 +94,16 @@ public class DspFanOutService {
             return new DspBidResult.Error(source.sourceId(), "platform not found: " + source.platformId());
         }
 
+        // 无对应适配器视为配置错误，显式失败而非静默降级
+        DspClient client = dspClientRouter.route(platform.platformCode()).orElse(null);
+        if (client == null) {
+            log.warn("无匹配的 DSP 适配器，广告源不参与竞价 sourceId={} platformCode={} 已部署={}",
+                    source.sourceId(), platform.platformCode(), dspClientRouter.supportedCodes());
+            return new DspBidResult.Error(source.sourceId(),
+                    "no dsp adapter for platformCode: " + platform.platformCode());
+        }
+
         long dspBidFloor = source.submitPrice();
-        DspClient client = dspClientRouter.route(platform.platformCode());
 
         try {
             return client.sendBid(source, request, dspBidFloor);

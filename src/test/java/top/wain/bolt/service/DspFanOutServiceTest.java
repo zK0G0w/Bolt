@@ -48,8 +48,9 @@ class DspFanOutServiceTest {
                 new AdSource.RtbSource("src-002", "imp-001", "plat-002", "slot-002", 200, 150L, 15, new AdSource.PriceMarkup.Fixed(200L))
         );
 
-        DspClient fastClient = (source, request, floor) ->
-                new DspBidResult.Success(source.sourceId(), floor + 50, "ad", "raw");
+        DspClient fastClient = client((source, request, floor) ->
+                new DspBidResult.Success(source.sourceId(), floor + 50, "ad", "raw"));
+
 
         DspFanOutService service = buildService(sources, fastClient);
         FanOutResult fanOut = service.fanOut(sampleRequest("imp-001", 500));
@@ -79,10 +80,10 @@ class DspFanOutServiceTest {
         );
 
         // Client sleeps longer than total deadline
-        DspClient slowClient = (source, request, floor) -> {
+        DspClient slowClient = client((source, request, floor) -> {
             Thread.sleep(2000);
             return new DspBidResult.Success(source.sourceId(), 999L, "ad", "raw");
-        };
+        });
 
         DspFanOutService service = buildService(sources, slowClient);
         List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 50)).results();
@@ -98,14 +99,14 @@ class DspFanOutServiceTest {
                 new AdSource.RtbSource("src-002", "imp-001", "plat-002", "slot-002", 200, 100L, 10, new AdSource.PriceMarkup.Ratio(10))
         );
 
-        DspClient mixedClient = (source, request, floor) -> {
+        DspClient mixedClient = client((source, request, floor) -> {
             if ("src-001".equals(source.sourceId())) {
                 return new DspBidResult.Success(source.sourceId(), 200L, "ad", "raw");
             }
             // src-002 sleeps forever
             Thread.sleep(5000);
             return new DspBidResult.Success(source.sourceId(), 100L, "ad", "raw");
-        };
+        });
 
         DspFanOutService service = buildService(sources, mixedClient);
         List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 100)).results();
@@ -123,9 +124,9 @@ class DspFanOutServiceTest {
                 new AdSource.RtbSource("src-001", "imp-001", "plat-001", "slot-001", 200, 100L, 10, new AdSource.PriceMarkup.Ratio(10))
         );
 
-        DspClient errorClient = (source, request, floor) -> {
+        DspClient errorClient = client((source, request, floor) -> {
             throw new RuntimeException("connection refused");
-        };
+        });
 
         DspFanOutService service = buildService(sources, errorClient);
         List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 200)).results();
@@ -136,8 +137,8 @@ class DspFanOutServiceTest {
 
     @Test
     void fanOut_noMatchingAdSources_returnsEmpty() {
-        DspClient client = (source, request, floor) ->
-                new DspBidResult.Success(source.sourceId(), 100L, "ad", "raw");
+        DspClient client = client((source, request, floor) ->
+                new DspBidResult.Success(source.sourceId(), 100L, "ad", "raw"));
 
         DspFanOutService service = buildService(List.of(), client);
         List<DspBidResult> results = service.fanOut(sampleRequest("unknown-imp", 200)).results();
@@ -152,8 +153,8 @@ class DspFanOutServiceTest {
                 new AdSource.RtbSource("src-001", "imp-001", "plat-001", "slot-001", 200, 200L, 10, new AdSource.PriceMarkup.Ratio(30))
         );
 
-        DspClient echoClient = (source, request, floor) ->
-                new DspBidResult.Success(source.sourceId(), floor, "ad", "raw");
+        DspClient echoClient = client((source, request, floor) ->
+                new DspBidResult.Success(source.sourceId(), floor, "ad", "raw"));
 
         DspFanOutService service = buildService(sources, echoClient);
         List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500)).results();
@@ -169,14 +170,35 @@ class DspFanOutServiceTest {
                 new AdSource.RtbSource("src-001", "imp-001", "plat-001", "slot-001", 200, 200L, 10, new AdSource.PriceMarkup.Fixed(350L))
         );
 
-        DspClient echoClient = (source, request, floor) ->
-                new DspBidResult.Success(source.sourceId(), floor, "ad", "raw");
+        DspClient echoClient = client((source, request, floor) ->
+                new DspBidResult.Success(source.sourceId(), floor, "ad", "raw"));
 
         DspFanOutService service = buildService(sources, echoClient);
         List<DspBidResult> results = service.fanOut(sampleRequest("imp-001", 500)).results();
 
         DspBidResult.Success s = (DspBidResult.Success) results.getFirst();
         assertEquals(350L, s.price());
+    }
+
+    /** 出价行为函数，用于以 lambda 形式构造测试用 DspClient */
+    @FunctionalInterface
+    private interface BidFn {
+        DspBidResult apply(AdSource source, BidRequest request, long dspBidFloor) throws Exception;
+    }
+
+    /** DspClient 有两个抽象方法，测试中通过此方法把出价逻辑包成适配器 */
+    private static DspClient client(BidFn fn) {
+        return new DspClient() {
+            @Override
+            public String platformCode() {
+                return "test";
+            }
+
+            @Override
+            public DspBidResult sendBid(AdSource source, BidRequest request, long dspBidFloor) throws Exception {
+                return fn.apply(source, request, dspBidFloor);
+            }
+        };
     }
 
     private DspFanOutService buildService(List<AdSource> sources, DspClient client) {
@@ -202,8 +224,8 @@ class DspFanOutServiceTest {
 
         DspClientRouter router = new DspClientRouter(List.of(client)) {
             @Override
-            public DspClient route(String platformCode) {
-                return client;
+            public Optional<DspClient> route(String platformCode) {
+                return Optional.of(client);
             }
         };
 

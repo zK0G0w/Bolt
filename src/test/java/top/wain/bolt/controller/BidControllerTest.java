@@ -60,10 +60,11 @@ class BidControllerTest {
 
         @Bean
         public DspPlatformRepository dspPlatformRepository() {
+            // platformCode 必须匹配已部署适配器，否则扇出返回 Error 导致无赢家
             var platforms = java.util.Map.of(
-                    "plat-001", new DspPlatform("plat-001", "华为ADX", "huawei", "https://adx.huawei.com/bid", 1000, 50),
-                    "plat-002", new DspPlatform("plat-002", "广点通", "gdt", "https://dsp.gdt.qq.com/bid", 2000, 100),
-                    "plat-003", new DspPlatform("plat-003", "百度联盟", "baidu", "https://dsp.baidu.com/bid", 1500, 80)
+                    "plat-001", new DspPlatform("plat-001", "Mock-ADX-A", "mock", "https://adx.mock-a.com/bid", 1000, 50),
+                    "plat-002", new DspPlatform("plat-002", "Mock-ADX-B", "mock2", "https://adx.mock-b.com/bid", 2000, 100),
+                    "plat-003", new DspPlatform("plat-003", "Mock-ADX-C", "mock", "https://adx.mock-c.com/bid", 1500, 80)
             );
             return id -> Optional.ofNullable(platforms.get(id));
         }

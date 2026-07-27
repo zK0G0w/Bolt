@@ -12,6 +12,12 @@ import top.wain.bolt.model.request.BidRequest;
 public interface DspClient {
 
     /**
+     * 本适配器支持的平台路由码，与 DspPlatform.platformCode 对应。
+     * 所有实现声明的集合即配置侧 platformCode 的合法取值范围。
+     */
+    String platformCode();
+
+    /**
      * 向 DSP 发送竞价请求
      * @param source 广告源配置（含超时、平台关联）
      * @param request 上游 BidRequest（透传）
