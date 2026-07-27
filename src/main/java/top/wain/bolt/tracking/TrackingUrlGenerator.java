@@ -25,19 +25,22 @@ public class TrackingUrlGenerator {
      * 生成展示追踪 URL（参数全部加密，无落地页）
      */
     public String impressionUrl(String bidId, String adSourceId, long price) {
-        return baseUrl + "/i?p=" + encrypt(bidId, adSourceId, price, "");
+        return baseUrl + "/i?p="
+                + encrypt(TrackingPayload.Event.IMPRESSION, bidId, adSourceId, price, "");
     }
 
     /**
      * 生成点击追踪 URL（含落地页 URL，加密进参数体内）
      */
     public String clickUrl(String bidId, String adSourceId, long price, String landingUrl) {
-        return baseUrl + "/c?p=" + encrypt(bidId, adSourceId, price, landingUrl);
+        return baseUrl + "/c?p="
+                + encrypt(TrackingPayload.Event.CLICK, bidId, adSourceId, price, landingUrl);
     }
 
-    private String encrypt(String bidId, String adSourceId, long price, String landingUrl) {
+    private String encrypt(TrackingPayload.Event event,
+                           String bidId, String adSourceId, long price, String landingUrl) {
         var payload = new TrackingPayload(
-                bidId, adSourceId, price, System.currentTimeMillis(), landingUrl);
+                event, bidId, adSourceId, price, System.currentTimeMillis(), landingUrl);
         return cipher.encrypt(payload.encode());
     }
 

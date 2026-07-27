@@ -48,7 +48,7 @@ public class TrackingController {
      */
     @GetMapping("/i")
     public ResponseEntity<byte[]> impression(@RequestParam String p) {
-        Optional<TrackingPayload> parsed = parse(p);
+        Optional<TrackingPayload> parsed = parse(p, TrackingPayload.Event.IMPRESSION);
         if (parsed.isEmpty()) {
             log.warn("展示追踪解析失败");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -74,7 +74,7 @@ public class TrackingController {
      */
     @GetMapping("/c")
     public ResponseEntity<Void> click(@RequestParam String p) {
-        Optional<TrackingPayload> parsed = parse(p);
+        Optional<TrackingPayload> parsed = parse(p, TrackingPayload.Event.CLICK);
         if (parsed.isEmpty()) {
             log.warn("点击追踪解析失败");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -97,8 +97,12 @@ public class TrackingController {
                 .build();
     }
 
-    /** 解密并解析负载，解密失败或格式非法统一返回空 */
-    private Optional<TrackingPayload> parse(String cipherText) {
-        return TrackingPayload.decode(cipher.decrypt(cipherText));
+    /**
+     * 解密并解析负载，解密失败、格式非法或事件类型不匹配统一返回空。
+     * 事件类型校验使展示与点击的 token 无法互换使用。
+     */
+    private Optional<TrackingPayload> parse(String cipherText, TrackingPayload.Event expected) {
+        return TrackingPayload.decode(cipher.decrypt(cipherText))
+                .filter(payload -> payload.event() == expected);
     }
 }

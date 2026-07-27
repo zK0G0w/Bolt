@@ -51,7 +51,8 @@ class TrackingControllerTest {
     @Test
     void impression_expiredPayload_returns410() throws Exception {
         TrackingCipher cipher = generator.cipher();
-        String p = cipher.encrypt(new TrackingPayload("bid-exp", "src-exp", 100L, 0L, "").encode());
+        String p = cipher.encrypt(new TrackingPayload(
+                TrackingPayload.Event.IMPRESSION, "bid-exp", "src-exp", 100L, 0L, "").encode());
 
         mockMvc.perform(get("/i").param("p", p))
                 .andExpect(status().isGone());
@@ -83,10 +84,29 @@ class TrackingControllerTest {
     }
 
     @Test
+    void impressionToken_replayedOnClickEndpoint_returns403() throws Exception {
+        String url = generator.impressionUrl("bid-x1", "src-x1", 100);
+        String p = url.substring(url.indexOf("p=") + 2);
+
+        mockMvc.perform(get("/c").param("p", p))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void clickToken_replayedOnImpressionEndpoint_returns403() throws Exception {
+        // 落地页为空的点击 token 除事件类型外与展示 token 完全相同，必须被拒绝
+        String url = generator.clickUrl("bid-x2", "src-x2", 100, "");
+        String p = url.substring(url.indexOf("p=") + 2);
+
+        mockMvc.perform(get("/i").param("p", p))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void click_expiredPayload_returns410() throws Exception {
         TrackingCipher cipher = generator.cipher();
-        String p = cipher.encrypt(
-                new TrackingPayload("bid-exp", "src-exp", 100L, 0L, "https://example.com").encode());
+        String p = cipher.encrypt(new TrackingPayload(
+                TrackingPayload.Event.CLICK, "bid-exp", "src-exp", 100L, 0L, "https://example.com").encode());
 
         mockMvc.perform(get("/c").param("p", p))
                 .andExpect(status().isGone());

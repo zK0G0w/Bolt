@@ -4,9 +4,10 @@ import java.util.Optional;
 
 /**
  * @Description: 追踪链接负载，封装明文格式的编解码与时效判定，
- *               格式知识仅存在于本类内部：bidId|adSourceId|price|timestamp|landingUrl
+ *               格式知识仅存在于本类内部：event|bidId|adSourceId|price|timestamp|landingUrl
  * @Author: WainZeng
  * @Date: 2026/07/27
+ * @param event 事件类型，使展示与点击的负载不可互换
  * @param bidId 竞价响应唯一标识
  * @param adSourceId 胜出广告源ID
  * @param price 媒体结算价，分/CPM
@@ -14,6 +15,7 @@ import java.util.Optional;
  * @param landingUrl 落地页地址，展示链接为空串
  */
 public record TrackingPayload(
+        Event event,
         String bidId,
         String adSourceId,
         long price,
@@ -22,10 +24,31 @@ public record TrackingPayload(
 ) {
 
     private static final String SEPARATOR = "|";
-    private static final int FIELD_COUNT = 5;
+    private static final int FIELD_COUNT = 6;
+
+    /** 追踪事件类型，作为负载首字段参与加密，防止展示与点击 token 互换使用 */
+    public enum Event {
+        IMPRESSION("i"),
+        CLICK("c");
+
+        private final String code;
+
+        Event(String code) {
+            this.code = code;
+        }
+
+        static Event fromCode(String code) {
+            for (Event e : values()) {
+                if (e.code.equals(code)) {
+                    return e;
+                }
+            }
+            return null;
+        }
+    }
 
     public String encode() {
-        return String.join(SEPARATOR,
+        return String.join(SEPARATOR, event.code,
                 bidId, adSourceId, String.valueOf(price), String.valueOf(timestamp), landingUrl);
     }
 
@@ -42,9 +65,13 @@ public record TrackingPayload(
         if (parts.length < FIELD_COUNT) {
             return Optional.empty();
         }
+        Event event = Event.fromCode(parts[0]);
+        if (event == null) {
+            return Optional.empty();
+        }
         try {
-            return Optional.of(new TrackingPayload(
-                    parts[0], parts[1], Long.parseLong(parts[2]), Long.parseLong(parts[3]), parts[4]));
+            return Optional.of(new TrackingPayload(event,
+                    parts[1], parts[2], Long.parseLong(parts[3]), Long.parseLong(parts[4]), parts[5]));
         } catch (NumberFormatException e) {
             return Optional.empty();
         }

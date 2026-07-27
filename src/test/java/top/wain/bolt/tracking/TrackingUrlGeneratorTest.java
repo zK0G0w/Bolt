@@ -33,13 +33,24 @@ class TrackingUrlGeneratorTest {
         String decrypted = generator.cipher().decrypt(p);
 
         assertNotNull(decrypted);
-        assertTrue(decrypted.startsWith("bid-003|src-003|200|"));
+        assertTrue(decrypted.startsWith("i|bid-003|src-003|200|"));
 
         // 展示链接的 landingUrl 为空串，字段数与点击链接一致
         TrackingPayload payload = TrackingPayload.decode(decrypted).orElseThrow();
+        assertEquals(TrackingPayload.Event.IMPRESSION, payload.event());
         assertEquals("bid-003", payload.bidId());
         assertEquals(200L, payload.price());
         assertEquals("", payload.landingUrl());
+    }
+
+    @Test
+    void impressionAndClickUrl_sameArgs_produceDifferentCipherText() {
+        String impression = generator.impressionUrl("bid-005", "src-005", 100);
+        String click = generator.clickUrl("bid-005", "src-005", 100, "");
+
+        assertNotEquals(
+                impression.substring(impression.indexOf("p=") + 2),
+                click.substring(click.indexOf("p=") + 2));
     }
 
     @Test
